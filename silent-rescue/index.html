@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>無言レスキュー - Silent Rescue Dashboard</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts (Noto Sans JP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -26,7 +24,6 @@
 </head>
 <body class="min-h-screen text-slate-800 flex flex-col pb-20">
 
-  <!-- ヘッダー -->
   <header class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md sticky top-0 z-40">
     <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-2">
@@ -36,7 +33,6 @@
           <span class="text-xs text-emerald-100">そっと寄り添う、優しい意思表示</span>
         </div>
       </div>
-      <!-- オフライン保存ステータス -->
       <div class="flex items-center space-x-1.5 text-xs bg-emerald-700/40 px-2.5 py-1 rounded-full border border-emerald-400/30">
         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
         <span>ローカル保存モード</span>
@@ -44,10 +40,8 @@
     </div>
   </header>
 
-  <!-- メインコンテンツ -->
   <main class="max-w-4xl w-full mx-auto p-4 flex-grow">
     
-    <!-- タブ切り替えボタン -->
     <div class="flex bg-white p-1 rounded-xl shadow-sm mb-6 border border-slate-200">
       <button onclick="switchTab('deck')" id="tab-deck" class="flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-emerald-600 bg-emerald-50">
         <span>🎴</span> <span>レスキューカード</span>
@@ -60,7 +54,6 @@
       </button>
     </div>
 
-    <!-- =============== DECK TAB (カード一覧) =============== -->
     <section id="view-deck" class="space-y-6">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <h3 class="font-bold text-slate-700 mb-2 flex items-center gap-1.5">
@@ -71,7 +64,6 @@
         </p>
       </div>
 
-      <!-- カテゴリフィルター -->
       <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
         <button onclick="filterCards('all')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white shrink-0 shadow-sm" data-category="all">すべて</button>
         <button onclick="filterCards('train')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0" data-category="train">🚇 電車・バス</button>
@@ -81,18 +73,13 @@
         <button onclick="filterCards('mycard')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0" data-category="mycard">⭐ 自作カスタム</button>
       </div>
 
-      <!-- カードグリッド -->
       <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- JSで動的にカードを挿入します -->
-      </div>
+        </div>
     </section>
 
-    <!-- =============== DASHBOARD TAB (実績・可視化) =============== -->
     <section id="view-dashboard" class="hidden space-y-6">
       
-      <!-- 統計サマリー -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- 累計人数カード -->
         <div class="bg-gradient-to-br from-teal-500 to-emerald-600 text-white p-6 rounded-2xl shadow-md relative overflow-hidden">
           <div class="absolute right-0 bottom-0 opacity-10 text-9xl translate-x-4 translate-y-4">🤝</div>
           <h3 class="text-sm font-medium text-emerald-100">累計レスキュー実績</h3>
@@ -103,7 +90,6 @@
           <p class="text-xs text-emerald-100/90 mt-2">そっと差し伸べた優しさの数です</p>
         </div>
 
-        <!-- 現在の称号 -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <h3 class="text-sm font-medium text-slate-400">現在のヒーロー称号</h3>
@@ -123,7 +109,6 @@
           </div>
         </div>
 
-        <!-- モチベーション・格言 -->
         <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
           <div>
             <h3 class="text-sm font-medium text-slate-400">今日の一言</h3>
@@ -135,28 +120,23 @@
         </div>
       </div>
 
-      <!-- 獲得バッジ -->
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <h3 class="font-bold text-slate-800 mb-4 flex items-center space-x-2">
           <span>🏆</span> <span>獲得したバッジ称号</span>
         </h3>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="badges-container">
-          <!-- 動的にバッジリストを生成 -->
-        </div>
+          </div>
       </div>
 
-      <!-- レスキュー履歴 (タイムライン) -->
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <h3 class="font-bold text-slate-800 mb-4 flex items-center space-x-2">
           <span>⏳</span> <span>レスキューの軌跡 (履歴)</span>
         </h3>
         <div id="history-timeline" class="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-          <!-- 動的に履歴を生成 -->
           <div class="text-center py-8 text-slate-400 text-sm" id="empty-history">
             まだレスキュー実績がありません。<br>街に出て誰かをそっと助けてみましょう！
           </div>
         </div>
-        <!-- 履歴クリア -->
         <div class="mt-4 flex justify-end">
           <button onclick="clearAllData()" class="text-xs text-rose-500 hover:text-rose-700 font-medium flex items-center space-x-1 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100">
             <span>🗑️</span> <span>実績とカスタムデータを初期化する</span>
@@ -166,7 +146,6 @@
 
     </section>
 
-    <!-- =============== CUSTOM TAB (自作カード作成) =============== -->
     <section id="view-custom" class="hidden space-y-6">
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto">
         <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center space-x-2">
@@ -220,7 +199,6 @@
 
   </main>
 
-  <!-- =============== CARD PREPARATION MODAL (メッセージ調整ダイアログ) =============== -->
   <div id="prep-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 transform transition-transform duration-300">
       <div class="flex justify-between items-start mb-4">
@@ -234,7 +212,6 @@
       </div>
 
       <div class="space-y-4">
-        <!-- 席どうぞオプション -->
         <div id="seat-options-container" class="space-y-3">
           <label class="block text-xs font-bold text-slate-500">追加のひとことを選択してください：</label>
           <div class="grid grid-cols-1 gap-2">
@@ -253,20 +230,17 @@
           </div>
         </div>
 
-        <!-- 自由記述テキストエリア -->
         <div id="prep-free-text-container" class="hidden space-y-1.5">
           <label for="prep-free-text" class="block text-xs font-bold text-slate-500">自由に入力：</label>
           <textarea id="prep-free-text" rows="2" class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs" placeholder="例: お荷物持ちましょうか？ など"></textarea>
         </div>
 
-        <!-- プレビュー -->
         <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
           <span class="text-[10px] font-bold text-slate-400 block mb-1">表示プレビュー</span>
           <p id="prep-preview-main" class="text-sm font-bold text-emerald-700"></p>
           <p id="prep-preview-sub" class="text-xs text-slate-500 mt-1 italic"></p>
         </div>
 
-        <!-- フルスクリーン起動 -->
         <button onclick="launchFullscreenFromPrep()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-2xl shadow-md transition duration-200 flex justify-center items-center space-x-2">
           <span>📱</span> <span>相手に見せる画面を起動</span>
         </button>
@@ -274,9 +248,7 @@
     </div>
   </div>
 
-  <!-- =============== FULLSCREEN PRESENTATION MODE =============== -->
   <div id="fullscreen-view" class="fixed inset-0 bg-slate-950 z-50 flex flex-col justify-between p-6 hidden text-white">
-    <!-- 上部: 戻るボタン -->
     <div class="flex justify-between items-center">
       <button onclick="closeFullscreen()" class="flex items-center space-x-1.5 text-slate-400 hover:text-white bg-slate-900/80 px-4 py-2 rounded-full text-xs font-bold border border-slate-800 transition">
         <span>👈</span> <span>戻る</span>
@@ -284,7 +256,6 @@
       <span class="text-xs text-slate-500 font-mono" id="fs-cat-badge">CATEGORIES</span>
     </div>
 
-    <!-- 中央: メッセージ表示 -->
     <div class="flex-grow flex flex-col justify-center items-center text-center px-4 max-w-3xl mx-auto space-y-6">
       <div class="text-7xl pulsing-glow" id="fs-emoji">🤫</div>
       <h2 class="text-3xl md:text-5xl font-black tracking-wider leading-relaxed text-yellow-300" id="fs-message">
@@ -295,7 +266,6 @@
       </p>
     </div>
 
-    <!-- 下部: 進行と管理ボタン -->
     <div class="flex flex-col items-center space-y-4 max-w-md mx-auto w-full pb-4">
       <button id="fs-proceed-btn" onclick="revealRescueAction()" class="w-full bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-bold text-sm py-4 rounded-2xl shadow-lg border border-slate-700 transition flex items-center justify-center space-x-2">
         <span>完了へ進む</span> <span>👉</span>
@@ -312,7 +282,6 @@
     </div>
   </div>
 
-  <!-- =============== CELEBRATION MODAL =============== -->
   <div id="celebration-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl p-6 max-w-xs w-full text-center shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300" id="celeb-card">
       <div class="text-5xl mb-4">🎉</div>
@@ -337,7 +306,6 @@
     </div>
   </div>
 
-  <!-- フッター -->
   <footer class="bg-slate-900 text-slate-400 py-6 mt-auto border-t border-slate-800">
     <div class="max-w-4xl mx-auto px-4 text-center text-xs space-y-2">
       <p>🤫 無言レスキュー - Silent Rescue Prototype</p>
