@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>無言レスキュー - Silent Rescue Dashboard</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Noto Sans JP) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f0f4f8;
+    }
+    .pulsing-glow {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.03); opacity: 0.95; }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col pb-20">
+
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">🤫</span>
+        <div>
+          <h1 class="text-lg font-bold tracking-wider leading-none">無言レスキュー</h1>
+          <span class="text-xs text-emerald-100">そっと寄り添う、優しい意思表示</span>
+        </div>
+      </div>
+      <!-- クラウド同期ステータス -->
+      <div id="sync-status" class="flex items-center space-x-1.5 text-xs bg-emerald-700/40 px-2.5 py-1 rounded-full border border-emerald-400/30">
+        <span class="w-2 h-2 rounded-full bg-amber-400" id="status-dot"></span>
+        <span id="status-text">接続中...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="max-w-4xl w-full mx-auto p-4 flex-grow">
+    
+    <!-- タブ切り替えボタン -->
+    <div class="flex bg-white p-1 rounded-xl shadow-sm mb-6 border border-slate-200">
+      <button onclick="switchTab('deck')" id="tab-deck" class="flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-emerald-600 bg-emerald-50">
+        <span>🎴</span> <span>レスキューカード</span>
+      </button>
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-slate-500 hover:text-slate-700">
+        <span>📊</span> <span>実績ダッシュボード</span>
+      </button>
+      <button onclick="switchTab('custom')" id="tab-custom" class="flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-slate-500 hover:text-slate-700">
+        <span>✍️</span> <span>カスタム作成</span>
+      </button>
+    </div>
+
+    <!-- =============== DECK TAB (カード一覧) =============== -->
+    <section id="view-deck" class="space-y-6">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+          <span>💡</span> 使い方
+        </h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          目の前の状況に合うカードを選んでタップしてください。スマートフォンの画面いっぱいに相手に伝えるメッセージが大きく表示されます。声を出すのが難しいとき、そっと画面を相手に見せてあげましょう。
+        </p>
+      </div>
+
+      <!-- カテゴリフィルター -->
+      <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
+        <button onclick="filterCards('all')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white shrink-0 shadow-sm" data-category="all">すべて</button>
+        <button onclick="filterCards('train')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0" data-category="train">🚇 電車・バス</button>
+        <button onclick="filterCards('street')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0" data-category="street">🚶 街なか</button>
+        <button onclick="filterCards('store')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0" data-category="store">🛍️ 店舗・レジ</button>
+        <button onclick="filterCards('emergency')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0" data-category="emergency">🚨 緊急・体調</button>
+        <button onclick="filterCards('mycard')" class="category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0" data-category="mycard">⭐ 自作カスタム</button>
+      </div>
+
+      <!-- カードグリッド -->
+      <div id="card-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- JSで動的にカードを挿入します -->
+      </div>
+    </section>
+
+    <!-- =============== DASHBOARD TAB (実績・可視化) =============== -->
+    <section id="view-dashboard" class="hidden space-y-6">
+      
+      <!-- 統計サマリー -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- 累計人数カード -->
+        <div class="bg-gradient-to-br from-teal-500 to-emerald-600 text-white p-6 rounded-2xl shadow-md relative overflow-hidden">
+          <div class="absolute right-0 bottom-0 opacity-10 text-9xl translate-x-4 translate-y-4">🤝</div>
+          <h3 class="text-sm font-medium text-emerald-100">累計レスキュー実績</h3>
+          <div class="flex items-baseline mt-4">
+            <span class="text-5xl font-black tracking-tight" id="total-count">0</span>
+            <span class="text-lg font-bold ml-1.5">人</span>
+          </div>
+          <p class="text-xs text-emerald-100/90 mt-2">そっと差し伸べた優しさの数です</p>
+        </div>
+
+        <!-- 現在の称号 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-medium text-slate-400">現在のヒーロー称号</h3>
+            <div class="flex items-center space-x-2 mt-4">
+              <span class="text-3xl" id="badge-emoji">🌱</span>
+              <span class="text-lg font-black text-slate-800" id="badge-title">優しい通行人</span>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div id="badge-progress-bar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 20%"></div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1.5 flex justify-between">
+              <span id="next-badge-text">次の称号まであと 3 回</span>
+              <span id="badge-ratio">2 / 5</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- モチベーション・格言 -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-medium text-slate-400">今日の一言</h3>
+            <p class="text-sm text-slate-600 italic leading-relaxed mt-3" id="daily-quote">
+              「小さな親切は、たとえどんなに小さくても、決して無駄になることはない。」
+            </p>
+          </div>
+          <span class="text-xs text-emerald-600 font-bold self-end mt-2">✨ Silent Hero Spirit</span>
+        </div>
+      </div>
+
+      <!-- 勲章・実績バッジ図鑑 -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-800 mb-4 flex items-center space-x-2">
+          <span>🏆</span> <span>獲得したバッジ称号</span>
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="badges-container">
+          <!-- 動的にバッジリストを生成 -->
+        </div>
+      </div>
+
+      <!-- レスキュー履歴 (タイムライン) -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-800 mb-4 flex items-center space-x-2">
+          <span>⏳</span> <span>レスキューの軌跡 (履歴)</span>
+        </h3>
+        <div id="history-timeline" class="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+          <!-- 動的に履歴を生成 -->
+          <div class="text-center py-8 text-slate-400 text-sm" id="empty-history">
+            まだレスキュー実績がありません。<br>街に出て誰かをそっと助けてみましょう！
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =============== CUSTOM TAB (自作カード作成) =============== -->
+    <section id="view-custom" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto">
+        <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center space-x-2">
+          <span>✍️</span> <span>マイ・レスキューカード作成</span>
+        </h2>
+        <p class="text-xs text-slate-500 mb-6 leading-relaxed">
+          あなた独自の状況に応じた「無言メッセージ」を登録できます。作ったカードは一覧に保存され、すぐに呼び出して使えます。
+        </p>
+
+        <form id="custom-card-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">1. アイコン (絵文字)</label>
+            <div class="flex gap-2 flex-wrap">
+              <button type="button" onclick="selectEmoji('🤫')" class="emoji-selector w-10 h-10 rounded-lg border-2 border-emerald-500 bg-emerald-50 flex items-center justify-center text-lg">🤫</button>
+              <button type="button" onclick="selectEmoji('🎒')" class="emoji-selector w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-lg">🎒</button>
+              <button type="button" onclick="selectEmoji('🩹')" class="emoji-selector w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-lg">🩹</button>
+              <button type="button" onclick="selectEmoji('🗺️')" class="emoji-selector w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-lg">🗺️</button>
+              <button type="button" onclick="selectEmoji('🛒')" class="emoji-selector w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-lg">🛒</button>
+              <button type="button" onclick="selectEmoji('☕')" class="emoji-selector w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-lg">☕</button>
+              <button type="button" onclick="selectEmoji('💬')" class="emoji-selector w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-lg">💬</button>
+            </div>
+            <input type="hidden" id="custom-emoji" value="🤫">
+          </div>
+
+          <div>
+            <label for="custom-title" class="block text-xs font-bold text-slate-500 mb-1.5">2. カードの題名 (一覧で見る用)</label>
+            <input type="text" id="custom-title" required placeholder="例: カバンが開いてますよ" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+          </div>
+
+          <div>
+            <label for="custom-category" class="block text-xs font-bold text-slate-500 mb-1.5">3. カテゴリ</label>
+            <select id="custom-category" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+              <option value="train">🚇 電車・バス</option>
+              <option value="street">🚶 街なか</option>
+              <option value="store">🛍️ 店舗・レジ</option>
+              <option value="emergency">🚨 緊急・体調</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="custom-message" class="block text-xs font-bold text-slate-500 mb-1.5">4. 相手に見せるメッセージ (最大60文字)</label>
+            <textarea id="custom-message" required rows="3" placeholder="例: カバンのファスナーが開いていますよ！(中身が出そうなので、そっとお知らせします。)" class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"></textarea>
+          </div>
+
+          <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow-sm transition duration-200 flex justify-center items-center space-x-2">
+            <span>✨</span> <span>マイカードを追加する</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =============== CARD PREPARATION MODAL (メッセージ調整・選択ダイアログ) =============== -->
+  <div id="prep-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 transform transition-transform duration-300">
+      <div class="flex justify-between items-start mb-4">
+        <h3 class="text-lg font-black text-slate-800 flex items-center gap-1.5">
+          <span id="prep-modal-emoji" class="text-2xl">🚇</span>
+          <span>伝えるメッセージの調整</span>
+        </h3>
+        <button onclick="closePrepModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- 席どうぞ専用オプション -->
+        <div id="seat-options-container" class="space-y-3">
+          <label class="block text-xs font-bold text-slate-500">追加のひとことを選択してください：</label>
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="selectPresetOption(0, '次の駅で降りますよ')" class="prep-option-btn text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-xs transition font-medium" id="opt-0">
+              👉 次の駅で降りますよ
+            </button>
+            <button onclick="selectPresetOption(1, '立っている方が楽です')" class="prep-option-btn text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-xs transition font-medium" id="opt-1">
+              👉 立っている方が楽です
+            </button>
+            <button onclick="selectPresetOption(2, 'お気になさらず座ってください')" class="prep-option-btn text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-xs transition font-medium" id="opt-2">
+              👉 お気になさらず座ってください
+            </button>
+            <button onclick="selectPresetOption(3, 'free')" class="prep-option-btn text-left p-3 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-xs transition font-medium" id="opt-3">
+              ✏️ 自由に記入する（フリー入力）
+            </button>
+          </div>
+        </div>
+
+        <!-- 自由記述テキストエリア -->
+        <div id="prep-free-text-container" class="hidden space-y-1.5">
+          <label for="prep-free-text" class="block text-xs font-bold text-slate-500">自由に入力：</label>
+          <textarea id="prep-free-text" rows="2" class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs" placeholder="例: お荷物持ちましょうか？ など"></textarea>
+        </div>
+
+        <!-- 表示プレビュー -->
+        <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+          <span class="text-[10px] font-bold text-slate-400 block mb-1">表示プレビュー</span>
+          <p id="prep-preview-main" class="text-sm font-bold text-emerald-700"></p>
+          <p id="prep-preview-sub" class="text-xs text-slate-500 mt-1 italic"></p>
+        </div>
+
+        <!-- アクション -->
+        <button onclick="launchFullscreenFromPrep()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-2xl shadow-md transition duration-200 flex justify-center items-center space-x-2">
+          <span>📱</span> <span>相手に見せる画面を起動</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =============== FULLSCREEN PRESENTATION MODE (相手に見せる画面) =============== -->
+  <div id="fullscreen-view" class="fixed inset-0 bg-slate-950 z-50 flex flex-col justify-between p-6 hidden text-white">
+    <!-- 上部: 閉じるボタン -->
+    <div class="flex justify-between items-center">
+      <button onclick="closeFullscreen()" class="flex items-center space-x-1.5 text-slate-400 hover:text-white bg-slate-900/80 px-4 py-2 rounded-full text-xs font-bold border border-slate-800 transition">
+        <span>👈</span> <span>戻る</span>
+      </button>
+      <span class="text-xs text-slate-500 font-mono" id="fs-cat-badge">CATEGORIES</span>
+    </div>
+
+    <!-- 中央: 特大メッセージ -->
+    <div class="flex-grow flex flex-col justify-center items-center text-center px-4 max-w-3xl mx-auto space-y-6">
+      <div class="text-7xl pulsing-glow" id="fs-emoji">🤫</div>
+      <!-- メインテキスト -->
+      <h2 class="text-3xl md:text-5xl font-black tracking-wider leading-relaxed text-yellow-300" id="fs-message">
+        メッセージテキストがここに表示されます。
+      </h2>
+      <!-- 補足テキスト -->
+      <p class="text-sm md:text-xl text-slate-300 max-w-lg mt-4 leading-relaxed border-t border-slate-800 pt-4 w-full" id="fs-subtext">
+        (声をかけずにそっとお見せしています)
+      </p>
+    </div>
+
+    <!-- 下部: コントロールエリア（初期状態は「完了」を隠し、「進む」ボタンを配置） -->
+    <div class="flex flex-col items-center space-y-4 max-w-md mx-auto w-full pb-4">
+      
+      <!-- [ステップ1] 「進む」ボタン (相手とのやりとりが終わったら自分が押す用) -->
+      <button id="fs-proceed-btn" onclick="revealRescueAction()" class="w-full bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-bold text-sm py-4 rounded-2xl shadow-lg border border-slate-700 transition flex items-center justify-center space-x-2">
+        <span>完了へ進む</span> <span>👉</span>
+      </button>
+
+      <!-- [ステップ2] 進んだ後にだけ出現する「実績記録」エリア (初期状態は hidden) -->
+      <div id="fs-complete-action-area" class="w-full hidden space-y-3 transform translate-y-2 transition-all duration-300">
+        <button onclick="markAsRescued()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-lg py-4 rounded-2xl shadow-xl transition duration-200 active:scale-[0.98] flex items-center justify-center space-x-2.5 border-b-4 border-emerald-700">
+          <span>🤝</span> <span>レスキュー完了！実績を記録</span>
+        </button>
+        <p class="text-[10px] text-center text-slate-500">
+          相手へのメッセージ伝達、人助けが完了したら実績をセーブしましょう！
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- =============== CUSTOM CONFETTI POPUP MODAL (完了時の祝賀ポップアップ) =============== -->
+  <div id="celebration-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl p-6 max-w-xs w-full text-center shadow-2xl border border-slate-100 transform scale-95 transition-transform duration-300" id="celeb-card">
+      <div class="text-5xl mb-4">🎉</div>
+      <h3 class="text-xl font-black text-slate-800">レスキュー完了！</h3>
+      <p class="text-xs text-slate-500 mt-2">
+        あなたのそっと優しいひと押しで、世界の優しさがまた1歩増えました。
+      </p>
+      
+      <!-- 追加された実績数値 -->
+      <div class="bg-emerald-50 text-emerald-700 rounded-xl py-3 px-4 my-4 flex items-center justify-between">
+        <span class="text-xs font-bold">累計実績</span>
+        <span class="text-xl font-black" id="celeb-counter-text">0 人</span>
+      </div>
+
+      <!-- 解放された称号がある場合 -->
+      <div id="unlock-announcement" class="hidden bg-amber-50 text-amber-800 rounded-xl p-3 mb-4 text-xs font-bold border border-amber-200 text-left">
+        👑 称号解放！<br>
+        <span class="text-slate-700 font-normal" id="unlock-title">「優しいヒーロー」になりました！</span>
+      </div>
+
+      <button onclick="closeCelebration()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold py-3 rounded-xl transition duration-200">
+        閉じる
+      </button>
+    </div>
+  </div>
+
+  <!-- フッター兼ナビゲーションヘルパー -->
+  <footer class="bg-slate-900 text-slate-400 py-6 mt-auto border-t border-slate-800">
+    <div class="max-w-4xl mx-auto px-4 text-center text-xs space-y-2">
+      <p>🤫 無言レスキュー - Silent Rescue Dashboard</p>
+      <p class="text-slate-600">※ このアプリはFirestoreを使用してオンラインでセキュアに実績データが保存されます。</p>
+    </div>
+  </footer>
+
+  <!-- Firebase SDK Modules & App Setup -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- FIREBASE SETTINGS (PROVIDED ENVIRONMENT GLOBAL VARIABLES) ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'silent-rescue-dashboard-prod';
+    const firebaseConfig = JSON.parse(__firebase_config);
+    
+    // Initialize Firebase Services
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // App Global State
+    let user = null;
+    let localStats = { total: 0, customCards: [] };
+    let localHistory = [];
+
+    // 固定プリセットカードのリスト
+    const PRESET_CARDS = [
+      {
+        id: "p1",
+        emoji: "🚇",
+        title: "席どうぞ (電車・バス)",
+        category: "train",
+        message: "この席、どうぞ！",
+        subtext: "(立っている方が楽ですので、どうぞお気になさらずお座りください)"
+      },
+      {
+        id: "p2",
+        emoji: "🎒",
+        title: "カバンが開いています",
+        category: "train",
+        message: "カバンが開いていますよ",
+        subtext: "(中のものが落ちそうなので、そっとお知らせいたします)"
+      },
+      {
+        id: "p3",
+        emoji: "🎁",
+        title: "落とし物ですよ",
+        category: "street",
+        message: "落とし物ですよ！",
+        subtext: "(こちらのものを落とされました。ご確認してみてください)"
+      },
+      {
+        id: "p4",
+        emoji: "🗺️",
+        title: "道案内しますか？",
+        category: "street",
+        message: "道に迷われましたか？",
+        subtext: "(よろしければスマートフォンの地図等でお調べしますので、画面を見せてください)"
+      },
+      {
+        id: "p5",
+        emoji: "🛍️",
+        title: "お先にどうぞ (レジなど)",
+        category: "store",
+        message: "お先にレジへどうぞ！",
+        subtext: "(私は急いでおりませんので、お気軽にお進みください)"
+      },
+      {
+        id: "p6",
+        emoji: "🩹",
+        title: "体調は大丈夫ですか？",
+        category: "emergency",
+        message: "体調は大丈夫ですか？",
+        subtext: "(少し休みますか？ 駅員さんや誰かを呼んできましょうか？)"
+      },
+      {
+        id: "p7",
+        emoji: "👔",
+        title: "服に何か付いています",
+        category: "street",
+        message: "お洋服に何かついていますよ",
+        subtext: "(背中側に値札・糸くず、もしくは少し汚れがついているようです。お節介でしたらスミマセン)"
+      },
+      {
+        id: "p8",
+        emoji: "🛒",
+        title: "カート・カゴ戻します",
+        category: "store",
+        message: "よろしければ、戻しましょうか？",
+        subtext: "(カートやお買い物カゴを返却口まで代わりに戻します。お気軽にお渡しください)"
+      },
+      {
+        id: "p9",
+        emoji: "🤰",
+        title: "おなかが大きい方へ席譲り",
+        category: "train",
+        message: "よろしければ席をお使いください",
+        subtext: "(マークが見えたので、そっとお譲りします。お気になさらず！)"
+      },
+      {
+        id: "p10",
+        emoji: "💦",
+        title: "お助けしましょうか？(荷物)",
+        category: "street",
+        message: "その大きなお荷物、お手伝いしますか？",
+        subtext: "(階段の上り下りなど、よろしければ少しの間だけお運びします。声をかけるのを遠慮なさらず！)"
+      }
+    ];
+
+    // 称号定義
+    const BADGES = [
+      { id: "b1", title: "優しい通行人", count: 0, emoji: "🌱", desc: "誰かを助けたい最初の一歩を踏み出した証" },
+      { id: "b2", title: "街のサイレントヒーロー", count: 3, emoji: "🎖️", desc: "複数回のレスキューを成し遂げた、頼もしい存在" },
+      { id: "b3", title: "無言の守護者", count: 10, emoji: "🛡️", desc: "周囲の困りごとに敏感な、真の守護ヒーロー" },
+      { id: "b4", title: "レジェンド・レスキュー", count: 30, emoji: "👑", desc: "街をそっと支え続ける優しさの生きた伝説" }
+    ];
+
+    // 一言リスト
+    const QUOTES = [
+      "「小さな親切は、たとえどんなに小さくても、決して無駄になることはない。」",
+      "「言葉を使わなくても、そっとスマホを差し出すだけで伝わる優しさがあります。」",
+      "「困っている人にそっと手を差し伸べた瞬間、世界は少しだけ温かくなります。」",
+      "「言葉に詰まる優しいあなたへ。このアプリが代わりにあなたの思いを届けます。」",
+      "「声に出すのが恥ずかしくても大丈夫。この静かなレスキューが誰かを救います。」"
+    ];
+
+    // 現在プレゼン中のデータ保存
+    let currentActiveCard = null;
+    let selectedOptionSubtext = ""; 
+
+    // --- INITIALIZE AUTHENTICATION ---
+    async function init() {
+      updateSyncStatus('yellow', 'ログイン中...');
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("Auth initialization failed:", error);
+        updateSyncStatus('red', '認証エラー。再試行中...');
+        setTimeout(init, 5000);
+      }
+    }
+
+    // 認証リスナーのバインド
+    onAuthStateChanged(auth, (authUser) => {
+      if (authUser) {
+        user = authUser;
+        updateSyncStatus('green', '同期中...');
+        setupDataListeners();
+      } else {
+        user = null;
+        updateSyncStatus('yellow', '未ログイン');
+      }
+    });
+
+    // Firestoreからリアルタイムにユーザーデータを同期
+    function setupDataListeners() {
+      if (!user) return;
+
+      const userId = user.uid;
+      const statsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'summary', 'stats');
+      const historyDocRef = doc(db, 'artifacts', appId, 'users', userId, 'history', 'timeline');
+
+      onSnapshot(statsDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          localStats = docSnap.data();
+          if (!localStats.customCards) localStats.customCards = [];
+        } else {
+          localStats = { total: 0, customCards: [] };
+          setDoc(statsDocRef, localStats).catch(err => console.error("Stats init failed", err));
+        }
+        renderApp();
+      }, (error) => {
+        console.error("Stats listening error:", error);
+        updateSyncStatus('red', 'データ取得エラー');
+      });
+
+      onSnapshot(historyDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          localHistory = docSnap.data().items || [];
+          localHistory.sort((a, b) => b.timestamp - a.timestamp);
+        } else {
+          localHistory = [];
+          setDoc(historyDocRef, { items: [] }).catch(err => console.error("History init failed", err));
+        }
+        renderHistory();
+      }, (error) => {
+        console.error("History listening error:", error);
+      });
+    }
+
+    // --- UI同期 & レンダリング ---
+    function renderApp() {
+      document.getElementById('total-count').textContent = localStats.total;
+
+      let activeBadge = BADGES[0];
+      let nextBadge = null;
+
+      for (let i = BADGES.length - 1; i >= 0; i--) {
+        if (localStats.total >= BADGES[i].count) {
+          activeBadge = BADGES[i];
+          nextBadge = BADGES[i + 1] || null;
+          break;
+        }
+      }
+
+      document.getElementById('badge-emoji').textContent = activeBadge.emoji;
+      document.getElementById('badge-title').textContent = activeBadge.title;
+
+      if (nextBadge) {
+        const remaining = nextBadge.count - localStats.total;
+        document.getElementById('next-badge-text').textContent = `次の称号まであと ${remaining} 回`;
+        const currentRange = nextBadge.count - activeBadge.count;
+        const currentProgress = localStats.total - activeBadge.count;
+        const percentage = Math.min(100, Math.max(0, (currentProgress / currentRange) * 100));
+        document.getElementById('badge-progress-bar').style.width = `${percentage}%`;
+        document.getElementById('badge-ratio').textContent = `${localStats.total} / ${nextBadge.count}`;
+      } else {
+        document.getElementById('next-badge-text').textContent = `全ての称号をアンロック！🎉`;
+        document.getElementById('badge-progress-bar').style.width = `100%`;
+        document.getElementById('badge-ratio').textContent = `${localStats.total} / Max`;
+      }
+
+      renderBadgeCollection(activeBadge);
+      renderCardGrid();
+    }
+
+    // バッジコレクションの生成
+    function renderBadgeCollection(activeBadge) {
+      const container = document.getElementById('badges-container');
+      container.innerHTML = '';
+
+      BADGES.forEach(badge => {
+        const isUnlocked = localStats.total >= badge.count;
+        const opacityClass = isUnlocked ? 'opacity-100' : 'opacity-40 grayscale';
+        const ringClass = badge.id === activeBadge.id ? 'ring-2 ring-emerald-500' : '';
+        const bgClass = isUnlocked ? 'bg-emerald-50/50 border-emerald-100' : 'bg-slate-50 border-slate-200';
+
+        const badgeHtml = `
+          <div class="${opacityClass} ${ringClass} ${bgClass} border p-3 rounded-xl text-center flex flex-col items-center justify-center transition">
+            <span class="text-3xl mb-1">${badge.emoji}</span>
+            <h4 class="text-xs font-bold text-slate-800 leading-none">${badge.title}</h4>
+            <span class="text-[9px] text-slate-400 mt-1">${badge.count}回で解放</span>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', badgeHtml);
+      });
+    }
+
+    // カード一覧の生成
+    function renderCardGrid() {
+      const container = document.getElementById('card-grid');
+      container.innerHTML = '';
+
+      const allCards = [...PRESET_CARDS, ...(localStats.customCards || [])];
+
+      allCards.forEach(card => {
+        const isCustom = card.id.startsWith('c-');
+        const customBadge = isCustom ? '<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 font-bold ml-1.5">カスタム</span>' : '';
+        const cardHtml = `
+          <div onclick="openPrepModal('${card.id}')" data-category="${card.category}" class="card-item bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer hover:border-emerald-300 group flex items-start space-x-4">
+            <div class="text-3xl bg-slate-50 p-2.5 rounded-xl group-hover:bg-emerald-50 transition">${card.emoji}</div>
+            <div class="flex-grow space-y-1">
+              <div class="flex items-center">
+                <h4 class="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition">${card.title}</h4>
+                ${customBadge}
+              </div>
+              <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">${card.message}</p>
+            </div>
+            <div class="text-slate-300 group-hover:text-emerald-500 self-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', cardHtml);
+      });
+
+      const activeFilterBtn = document.querySelector('.category-btn.bg-slate-800');
+      if (activeFilterBtn) {
+        filterCards(activeFilterBtn.dataset.category);
+      }
+    }
+
+    // レスキュー履歴のレンダリング
+    function renderHistory() {
+      const container = document.getElementById('history-timeline');
+      const emptyEl = document.getElementById('empty-history');
+
+      if (localHistory.length === 0) {
+        emptyEl.style.display = 'block';
+        const items = container.querySelectorAll('.history-item');
+        items.forEach(el => el.remove());
+        return;
+      }
+
+      emptyEl.style.display = 'none';
+      const items = container.querySelectorAll('.history-item');
+      items.forEach(el => el.remove());
+
+      localHistory.forEach(item => {
+        const dateObj = new Date(item.timestamp);
+        const formattedDate = `${dateObj.getFullYear()}/${dateObj.getMonth() + 1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+
+        const itemHtml = `
+          <div class="history-item flex items-start space-x-3 text-xs border-l-2 border-slate-100 pl-4 pb-4 relative">
+            <div class="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+            <div class="flex-grow space-y-0.5">
+              <span class="text-[10px] text-slate-400 font-mono">${formattedDate}</span>
+              <p class="font-bold text-slate-700">${item.title}をそっと助けました</p>
+              <p class="text-slate-500 line-clamp-1 italic">"${item.message}"</p>
+            </div>
+            <span class="text-xs bg-slate-50 border border-slate-100 text-slate-600 px-2 py-0.5 rounded-full">+1</span>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', itemHtml);
+      });
+    }
+
+    // 同期ステータスの更新
+    function updateSyncStatus(color, text) {
+      const dot = document.getElementById('status-dot');
+      const textEl = document.getElementById('status-text');
+
+      dot.className = "w-2 h-2 rounded-full";
+      if (color === 'green') dot.classList.add('bg-emerald-400');
+      else if (color === 'yellow') dot.classList.add('bg-amber-400');
+      else if (color === 'red') dot.classList.add('bg-rose-500');
+
+      textEl.textContent = text;
+    }
+
+    // タブの切り替え
+    window.switchTab = function(tabName) {
+      document.getElementById('view-deck').classList.add('hidden');
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-custom').classList.add('hidden');
+
+      document.getElementById('tab-deck').className = "flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-slate-500 hover:text-slate-700";
+      document.getElementById('tab-dashboard').className = "flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-slate-500 hover:text-slate-700";
+      document.getElementById('tab-custom').className = "flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-slate-500 hover:text-slate-700";
+
+      if (tabName === 'deck') {
+        document.getElementById('view-deck').classList.remove('hidden');
+        document.getElementById('tab-deck').className = "flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-emerald-600 bg-emerald-50";
+      } else if (tabName === 'dashboard') {
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('tab-dashboard').className = "flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-emerald-600 bg-emerald-50";
+      } else if (tabName === 'custom') {
+        document.getElementById('view-custom').classList.remove('hidden');
+        document.getElementById('tab-custom').className = "flex-1 py-3 text-sm font-bold rounded-lg transition-all duration-200 flex justify-center items-center space-x-1 text-emerald-600 bg-emerald-50";
+      }
+    }
+
+    // カテゴリによるカードフィルター
+    window.filterCards = function(category) {
+      const btns = document.querySelectorAll('.category-btn');
+      btns.forEach(btn => {
+        if (btn.dataset.category === category) {
+          btn.className = "category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white shrink-0 shadow-sm";
+        } else {
+          btn.className = "category-btn px-4 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 shrink-0";
+        }
+      });
+
+      const cards = document.querySelectorAll('.card-item');
+      cards.forEach(card => {
+        const cardCat = card.dataset.category;
+        if (category === 'all') {
+          card.classList.remove('hidden');
+        } else if (category === 'mycard') {
+          if (card.querySelector('.bg-indigo-50')) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        } else {
+          if (cardCat === category) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        }
+      });
+    }
+
+    // --- MESSAGE PREPARATION MODAL LOGIC ---
+    window.openPrepModal = function(cardId) {
+      const allCards = [...PRESET_CARDS, ...(localStats.customCards || [])];
+      const card = allCards.find(c => c.id === cardId);
+      if (!card) return;
+
+      currentActiveCard = card;
+      document.getElementById('prep-modal-emoji').textContent = card.emoji;
+      document.getElementById('prep-preview-main').textContent = card.message;
+
+      const seatOptions = document.getElementById('seat-options-container');
+      const freeTextContainer = document.getElementById('prep-free-text-container');
+      const freeTextArea = document.getElementById('prep-free-text');
+
+      freeTextArea.value = "";
+
+      // 席どうぞ(p1)カードの場合
+      if (card.id === "p1") {
+        seatOptions.classList.remove('hidden');
+        freeTextContainer.classList.add('hidden');
+        // デフォルト選択肢
+        selectPresetOption(0, '次の駅で降りますよ');
+      } else {
+        // 通常のカードはそのままフルスクリーン起動、もしくは自由編集だけ対応
+        seatOptions.classList.add('hidden');
+        freeTextContainer.classList.remove('hidden');
+        freeTextArea.value = card.subtext || '';
+        selectedOptionSubtext = card.subtext || '';
+        document.getElementById('prep-preview-sub').textContent = selectedOptionSubtext;
+      }
+
+      // 自由記述エリア入力のリアルタイム反映
+      freeTextArea.oninput = function() {
+        selectedOptionSubtext = freeTextArea.value ? `(${freeTextArea.value})` : '';
+        document.getElementById('prep-preview-sub').textContent = selectedOptionSubtext;
+      };
+
+      document.getElementById('prep-modal').classList.remove('hidden');
+    }
+
+    window.closePrepModal = function() {
+      document.getElementById('prep-modal').classList.add('hidden');
+    }
+
+    // プリセットオプションの選択処理
+    window.selectPresetOption = function(index, text) {
+      const btns = document.querySelectorAll('.prep-option-btn');
+      btns.forEach(btn => btn.classList.remove('border-emerald-500', 'bg-emerald-50', 'text-emerald-700'));
+
+      const activeBtn = document.getElementById(`opt-${index}`);
+      if (activeBtn) {
+        activeBtn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-700');
+      }
+
+      const freeTextContainer = document.getElementById('prep-free-text-container');
+      if (text === 'free') {
+        freeTextContainer.classList.remove('hidden');
+        selectedOptionSubtext = '';
+        document.getElementById('prep-free-text').placeholder = "自由に入力してください";
+      } else {
+        freeTextContainer.classList.add('hidden');
+        selectedOptionSubtext = `(${text})`;
+      }
+      document.getElementById('prep-preview-sub').textContent = selectedOptionSubtext;
+    }
+
+    // モーダル設定値からフルスクリーンを起動
+    window.launchFullscreenFromPrep = function() {
+      if (!currentActiveCard) return;
+
+      closePrepModal();
+
+      // フルスクリーンビューにデータを反映
+      document.getElementById('fs-emoji').textContent = currentActiveCard.emoji;
+      document.getElementById('fs-message').textContent = currentActiveCard.message;
+      document.getElementById('fs-subtext').textContent = selectedOptionSubtext || currentActiveCard.subtext || '';
+      
+      let categoryJapanese = "一般";
+      if (currentActiveCard.category === 'train') categoryJapanese = "🚇 電車・バス";
+      if (currentActiveCard.category === 'street') categoryJapanese = "🚶 街なか";
+      if (currentActiveCard.category === 'store') categoryJapanese = "🛍️ 店舗・レジ";
+      if (currentActiveCard.category === 'emergency') categoryJapanese = "🚨 緊急・体調";
+
+      document.getElementById('fs-cat-badge').textContent = categoryJapanese;
+
+      // 【重要】レスキュー完了と進むボタンの表示初期状態の制御
+      document.getElementById('fs-proceed-btn').classList.remove('hidden');
+      document.getElementById('fs-complete-action-area').classList.add('hidden');
+
+      document.getElementById('fullscreen-view').classList.remove('hidden');
+    }
+
+    // --- FULLSCREEN PRESENTATION CONTROL ---
+    window.closeFullscreen = function() {
+      document.getElementById('fullscreen-view').classList.add('hidden');
+    }
+
+    // 「進む」ボタンが押された時の処理
+    window.revealRescueAction = function() {
+      // 進むボタンを非表示にし、レスキュー記録用の領域を表示する
+      document.getElementById('fs-proceed-btn').classList.add('hidden');
+      
+      const completeArea = document.getElementById('fs-complete-action-area');
+      completeArea.classList.remove('hidden');
+      completeArea.classList.add('animate-bounce'); // 注目させるため少し動かす
+      setTimeout(() => {
+        completeArea.classList.remove('animate-bounce');
+      }, 1000);
+    }
+
+    // レスキュー完了のマーク（実績追加・Firestore書き込み）
+    window.markAsRescued = async function() {
+      if (!currentActiveCard || !user) return;
+
+      const userId = user.uid;
+      const statsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'summary', 'stats');
+      const historyDocRef = doc(db, 'artifacts', appId, 'users', userId, 'history', 'timeline');
+
+      const now = Date.now();
+      const currentTotal = localStats.total || 0;
+      const newTotal = currentTotal + 1;
+
+      const newHistoryItem = {
+        title: currentActiveCard.title,
+        message: currentActiveCard.message + ' ' + (selectedOptionSubtext || ''),
+        timestamp: now
+      };
+
+      closeFullscreen();
+
+      document.getElementById('celeb-counter-text').textContent = `${newTotal} 人`;
+
+      const currentBadge = BADGES.find(b => currentTotal >= b.count);
+      const newBadge = BADGES.find(b => newTotal >= b.count);
+      const unlockAnnounce = document.getElementById('unlock-announcement');
+      
+      if (newBadge && (!currentBadge || newBadge.id !== currentBadge.id)) {
+        document.getElementById('unlock-title').textContent = `「${newBadge.title}」になりました！`;
+        unlockAnnounce.classList.remove('hidden');
+      } else {
+        unlockAnnounce.classList.add('hidden');
+      }
+
+      document.getElementById('celebration-modal').classList.remove('hidden');
+
+      try {
+        updateSyncStatus('yellow', '保存中...');
+        await updateDoc(statsDocRef, {
+          total: newTotal
+        });
+
+        await updateDoc(historyDocRef, {
+          items: arrayUnion(newHistoryItem)
+        });
+        
+        updateSyncStatus('green', '同期中');
+      } catch (error) {
+        console.error("Firestore update failed", error);
+        updateSyncStatus('red', '保存エラー');
+      }
+    }
+
+    window.closeCelebration = function() {
+      document.getElementById('celebration-modal').classList.add('hidden');
+    }
+
+    // カスタムカード用の絵文字選択
+    window.selectEmoji = function(emoji) {
+      document.getElementById('custom-emoji').value = emoji;
+      
+      const buttons = document.querySelectorAll('.emoji-selector');
+      buttons.forEach(btn => {
+        if (btn.textContent === emoji) {
+          btn.className = "emoji-selector w-10 h-10 rounded-lg border-2 border-emerald-500 bg-emerald-50 flex items-center justify-center text-lg";
+        } else {
+          btn.className = "emoji-selector w-10 h-10 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-lg";
+        }
+      });
+    }
+
+    // 自作カスタムカードの追加フォームハンドラー
+    document.getElementById('custom-card-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!user) return;
+
+      const emoji = document.getElementById('custom-emoji').value;
+      const title = document.getElementById('custom-title').value.trim();
+      const category = document.getElementById('custom-category').value;
+      const message = document.getElementById('custom-message').value.trim();
+
+      const newCard = {
+        id: `c-${Date.now()}`,
+        emoji: emoji,
+        title: title,
+        category: category,
+        message: message,
+        subtext: "(言葉を出さずにスマートフォンを通じてお知らせしています)"
+      };
+
+      try {
+        updateSyncStatus('yellow', 'カード登録中...');
+        const userId = user.uid;
+        const statsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'summary', 'stats');
+
+        await updateDoc(statsDocRef, {
+          customCards: arrayUnion(newCard)
+        });
+
+        document.getElementById('custom-title').value = '';
+        document.getElementById('custom-message').value = '';
+        selectEmoji('🤫');
+
+        switchTab('deck');
+        updateSyncStatus('green', '同期中');
+      } catch (error) {
+        console.error("Failed to add custom card:", error);
+        updateSyncStatus('red', '登録エラー');
+      }
+    });
+
+    // --- INITIAL RUN ---
+    window.onload = function() {
+      const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+      document.getElementById('daily-quote').textContent = randomQuote;
+      
+      init();
+    };
+
+  </script>
+</body>
+</html>
